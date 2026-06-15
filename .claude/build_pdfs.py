@@ -11,7 +11,7 @@ import base64, pathlib, re
 from bs4 import BeautifulSoup
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-APP  = ROOT / "Goalie-Season-System-APP.html"
+APP  = ROOT / "index.html"
 
 CREST = "data:image/jpeg;base64," + base64.b64encode((ROOT/"blue claws.jpg").read_bytes()).decode()
 
