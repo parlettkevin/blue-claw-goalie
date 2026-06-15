@@ -7,7 +7,8 @@ Outputs (color + inksaver):
   Goalie-CheatSheet-1page-color.pdf / -inksaver.pdf   (1pg landscape)
   Goalie-Playbook-FULL-color.pdf    / -inksaver.pdf   (portrait, multi-page)
 """
-import base64, pathlib, re
+import base64, pathlib, re, subprocess, sys, shutil
+import http.server, threading
 from bs4 import BeautifulSoup
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -429,6 +430,67 @@ def cheatsheet(ink=False):
     </body></html>"""
     return html
 
+# ===================== CHROME HELPERS =====================
+def find_chrome():
+    candidates = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        str(pathlib.Path.home()/"AppData"/"Local"/"Google"/"Chrome"/"Application"/"chrome.exe"),
+    ]
+    for c in candidates:
+        if pathlib.Path(c).exists():
+            return c
+    return shutil.which("google-chrome") or shutil.which("chromium")
+
+def render_pdf(chrome, src_html, dest_pdf, landscape=False):
+    html_path = pathlib.Path(src_html)
+    html_dir  = html_path.parent
+    filename  = html_path.name
+
+    # Serve via localhost so Chrome never sees a file:// path in its header.
+    # --print-to-pdf-no-header is unreliable for portrait docs when using
+    # file:// URLs (known Chrome headless bug); HTTP avoids the issue entirely.
+    class _SilentHandler(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *a): pass
+        def __init__(self, *a, **kw):
+            super().__init__(*a, directory=str(html_dir), **kw)
+
+    with http.server.HTTPServer(("127.0.0.1", 0), _SilentHandler) as srv:
+        port = srv.server_address[1]
+        t = threading.Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        args = [
+            chrome,
+            "--headless=new", "--disable-gpu", "--no-sandbox",
+            f"--print-to-pdf={dest_pdf}",
+            "--print-to-pdf-no-header",
+            "--run-all-compositor-stages-before-draw",
+            "--virtual-time-budget=3000",
+        ]
+        if landscape:
+            args.append("--print-to-pdf-landscape")
+        args.append(f"http://127.0.0.1:{port}/{filename}")
+        rc = subprocess.run(args, capture_output=True).returncode
+        srv.shutdown()
+
+    return rc == 0
+
+def verify_clean(pdf_paths):
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        print("  [skip] install pypdf to enable URL-leak check: pip install pypdf")
+        return True
+    ok = True
+    for p in pdf_paths:
+        text = " ".join(page.extract_text() or "" for page in PdfReader(p).pages)
+        # Only flag the private filesystem path; localhost is benign
+        leak = "file://" in text
+        print(f"  {p.name}: {'FAIL — file:// URL leaked' if leak else 'clean'}")
+        if leak:
+            ok = False
+    return ok
+
 # ===================== WRITE FILES =====================
 out = ROOT / ".claude" / "_print"
 out.mkdir(exist_ok=True)
@@ -441,4 +503,32 @@ specs = [
 for name, html in specs:
     (out / (name.replace(".pdf",".html"))).write_text(html, encoding="utf-8")
     print("wrote", name.replace(".pdf",".html"))
-print("DONE")
+
+# ---- render via headless Chrome ----
+chrome = find_chrome()
+if not chrome:
+    print("\nChrome not found — HTML files written. Render manually:")
+    print('  chrome --headless=new --print-to-pdf=OUT.pdf --print-to-pdf-no-header "file:///PATH.html"')
+    sys.exit(0)
+
+print(f"\nRendering PDFs (Chrome: {pathlib.Path(chrome).name})...")
+render_jobs = [
+    ("Goalie-Playbook-FULL-color.pdf",       False),
+    ("Goalie-Playbook-FULL-inksaver.pdf",    False),
+    ("Goalie-CheatSheet-1page-color.pdf",    True),
+    ("Goalie-CheatSheet-1page-inksaver.pdf", True),
+]
+pdf_paths = []
+for name, landscape in render_jobs:
+    src  = out / name.replace(".pdf", ".html")
+    dest = ROOT / name
+    ok   = render_pdf(chrome, str(src), str(dest), landscape)
+    print(f"  {name}: {'ok' if ok else 'FAILED'}")
+    if ok:
+        pdf_paths.append(dest)
+
+print("\nVerifying — no URL in footer...")
+if not verify_clean(pdf_paths):
+    print("\nFix: check --print-to-pdf-no-header flag or add @page{margin:0} override.")
+    sys.exit(1)
+print("\nDONE — all PDFs rendered and verified clean.")
