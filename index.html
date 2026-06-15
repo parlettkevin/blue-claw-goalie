@@ -195,6 +195,15 @@ body{
 .seasonwrap{overflow-x:auto}
 .seasonwrap .wk{position:sticky;left:0;background:var(--bg-2);z-index:1}
 .seasonwrap tr.phase td:first-child{position:sticky;left:0;background:var(--blue-surf);z-index:1}
+/* drill reference links inside the season table */
+.drill-ref{
+  font-family:"Azeret Mono",monospace;font-weight:700;font-size:inherit;
+  color:var(--blue-txt);background:none;border:none;padding:0 1px;cursor:pointer;
+  text-decoration:underline;text-decoration-color:oklch(56% 0.24 264 / .35);
+  text-underline-offset:2px;transition:color .14s,text-decoration-color .14s;
+  vertical-align:baseline;line-height:inherit;
+}
+.drill-ref:hover{color:var(--blue-bright);text-decoration-color:var(--blue-bright)}
 
 .body-wrap{padding:18px 14px 40px}
 
@@ -920,6 +929,44 @@ footer b{color:var(--red-txt);font-weight:600}
       cards.forEach(function(c){c.style.display=(pod==='all'||c.getAttribute('data-pod')===pod)?'':'none';});
       heads.forEach(function(h){h.style.display=(pod==='all'||h.getAttribute('data-pod')===pod)?'':'none';});
       document.querySelectorAll('[data-section]').forEach(function(s){s.style.display=(pod==='all')?'':'none';});
+    });
+  });
+
+  // Drill reference shortcut links in the season map table
+  var podMap={A:'track',B:'foot',C:'clear',D:'comm'};
+  document.querySelectorAll('.seasonwrap td').forEach(function(td){
+    td.innerHTML=td.innerHTML.replace(/\b([A-D]\d)\b/g,function(_,code){
+      return '<button class="drill-ref" data-drill="'+code+'">'+code+'</button>';
+    });
+  });
+  document.querySelectorAll('.drill-ref').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var code=btn.getAttribute('data-drill');
+      var pod=podMap[code[0]];
+      // 1. Switch to Drills mode if not already there
+      var drillsTab=document.querySelector('.modetab[data-mode="drills"]');
+      if(drillsTab&&!drillsTab.classList.contains('active')){drillsTab.click();}
+      // 2. Select the correct pod pill
+      var podPill=document.querySelector('.pill[data-pod="'+pod+'"]');
+      if(podPill){podPill.click();}
+      // 3. Find the card and open it if not already open
+      var target=null;
+      document.querySelectorAll('.card-num').forEach(function(n){
+        if(n.textContent.trim()===code){target=n.closest('.card');}
+      });
+      if(!target)return;
+      if(!target.classList.contains('open')){
+        var head=target.querySelector('.card-head');
+        if(head){head.click();}
+      }
+      // 4. Scroll after layout has settled (double RAF accounts for mode-switch reflow)
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          var navH=(document.querySelector('.navstack')||{}).offsetHeight||0;
+          var top=target.getBoundingClientRect().top+window.pageYOffset-navH-12;
+          window.scrollTo({top:top,behavior:'smooth'});
+        });
+      });
     });
   });
 
