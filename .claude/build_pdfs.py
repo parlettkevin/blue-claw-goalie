@@ -274,7 +274,7 @@ def playbook(ink=False):
       <div class="how">
         <div class="row"><div class="ic">STEP</div><div><h3>Attack the ball</h3><p>Step AT the shot; the “T” with the back foot happens on its own. Coach the attack, not the letter.</p></div></div>
         <div class="row"><div class="ic">L1·3</div><div><h3>Mastery ladder</h3><p>L1 learning · L2 competent · L3 game-ready. Effort first; numbers only at L3.</p></div></div>
-        <div class="row"><div class="ic">TALK</div><div><h3>Communication counts</h3><p>Ball Top, Left, Right, Check, Clear. A goalie who talks beats one with perfect feet.</p></div></div>
+        <div class="row"><div class="ic">TALK</div><div><h3>Communication counts</h3><p>Ball Top, Left, Right, Check, Break. A goalie who talks beats one with perfect feet.</p></div></div>
       </div>
     </section>""")
 
@@ -411,7 +411,7 @@ def cheatsheet(ink=False):
       <div class="pbox"><h3>Attack the ball (B2)</h3><p>Step AT the shot; the “T” happens on its own. Don’t coach the letter.</p></div>
       <div class="pbox"><h3>Mastery: L1/L2/L3</h3><p>Learning → Competent → Game-ready. Effort first; numbers only at L3.</p></div>
       <div class="pbox"><h3>Rebound + Wide Clear</h3><p>Chase pop-loose; clear to the sideline, never up the middle.</p></div>
-      <div class="pbox"><h3>Talk (Pod D)</h3><p>Ball Top, Left, Right, Check, One More, Clear. A talking goalie wins.</p></div>
+      <div class="pbox"><h3>Talk (Pod D)</h3><p>Ball Top, Left, Right, Check, One More, Break. A talking goalie wins.</p></div>
     </div>
     <div class="pods">{pod_col('track')}{pod_col('foot')}{pod_col('clear')}{pod_col('comm')}</div>
     <div class="low">
