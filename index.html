@@ -195,6 +195,29 @@ body{
 .seasonwrap{overflow-x:auto}
 .seasonwrap .wk{position:sticky;left:0;background:var(--bg-2);z-index:1}
 .seasonwrap tr.phase td:first-child{position:sticky;left:0;background:var(--blue-surf);z-index:1}
+/* ===== FLOATING MAP RETURN BUTTON ===== */
+#map-return{
+  position:fixed;
+  bottom:calc(22px + env(safe-area-inset-bottom,0px));
+  right:18px;z-index:40;
+  display:flex;align-items:center;gap:7px;
+  padding:11px 16px;
+  background:oklch(21% 0.028 264 / .92);
+  border:1.5px solid var(--blue-line);border-radius:999px;
+  color:var(--blue-txt);
+  font-family:"Saira Condensed",sans-serif;font-weight:800;
+  font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+  cursor:pointer;white-space:nowrap;
+  box-shadow:0 6px 24px -6px rgba(0,0,0,.7),0 0 0 1px oklch(43% 0.23 264 / .15);
+  backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4);
+  opacity:0;transform:translateY(8px);pointer-events:none;
+  transition:opacity .22s ease,transform .22s ease,background .15s,border-color .15s;
+}
+#map-return.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+#map-return:hover{background:oklch(26% 0.07 264 / .96);border-color:var(--blue-bright)}
+#map-return:active{transform:scale(.95)}
+#map-return svg{width:13px;height:13px;flex:0 0 auto}
+
 /* drill reference links inside the season table */
 .drill-ref{
   font-family:"Azeret Mono",monospace;font-weight:700;font-size:inherit;
@@ -906,6 +929,10 @@ footer b{color:var(--red-txt);font-weight:600}
     </div>
 
   </div>
+  <button id="map-return" aria-label="Back to Season Map">
+    <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V2M2 6l4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Season Map
+  </button>
   <footer>Build the <b>brave kid</b> first, the goalie second. Soft balls until earned, loud positive energy, end every session on a save and a cheer.</footer>
 </div>
 
@@ -971,7 +998,14 @@ footer b{color:var(--red-txt);font-weight:600}
   });
 
   var app=document.querySelector('.app');
+  var mapReturn=document.getElementById('map-return');
   app.setAttribute('data-mode','drills');
+  mapReturn.classList.add('visible');
+  mapReturn.addEventListener('click',function(){
+    var seasonTab=document.querySelector('.modetab[data-mode="season"]');
+    if(seasonTab){seasonTab.click();}
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
   var modetabs=document.querySelectorAll('.modetab');
   modetabs.forEach(function(t){
     t.addEventListener('click',function(){
@@ -979,6 +1013,7 @@ footer b{color:var(--red-txt);font-weight:600}
       modetabs.forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false');});
       t.classList.add('active');t.setAttribute('aria-selected','true');
       app.setAttribute('data-mode',mode);
+      mapReturn.classList.toggle('visible',mode==='drills');
       if(mode==='drills'){
         cards.forEach(function(c){c.style.display='';});
         heads.forEach(function(h){h.style.display='';});
