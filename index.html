@@ -136,12 +136,28 @@ body{
 }
 .stat span{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute)}
 
-/* ===== POD NAV ===== */
-.podnav{
+/* ===== NAV STACK (mode toggle + pod pills) ===== */
+.navstack{
   position:sticky;top:0;z-index:30;
   background:oklch(15% 0.022 264 / .82);
   backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);
-  padding:11px 14px;display:flex;gap:8px;border-bottom:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.modenav{
+  display:flex;gap:6px;padding:10px 14px 8px;border-bottom:1px solid var(--line-soft);
+}
+.modetab{
+  flex:1;border:1.5px solid var(--line);background:var(--surface);
+  color:var(--ink-soft);font-family:"Saira Condensed",sans-serif;font-weight:800;font-size:13px;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap;
+  transition:background .18s,border-color .18s,color .18s,transform .12s ease;
+}
+.modetab:hover{background:var(--surface-2);border-color:var(--line)}
+.modetab:active{transform:scale(.97)}
+.modetab.active{background:var(--blue);border-color:var(--blue-line);color:var(--ink)}
+.podnav{
+  padding:10px 14px;display:flex;gap:8px;
   overflow-x:auto;scrollbar-width:none;
 }
 .podnav::-webkit-scrollbar{display:none}
@@ -166,6 +182,19 @@ body{
 .pill.active[data-pod="foot"]{background:var(--foot-d);border-color:var(--foot-line);color:oklch(18% 0.04 70)}
 .pill.active[data-pod="clear"]{background:var(--clear-d);border-color:var(--clear-line)}
 .pill.active[data-pod="comm"]{background:var(--comm-d);border-color:var(--comm-line);color:oklch(16% 0.03 190)}
+
+/* ===== MODE VISIBILITY ===== */
+.app[data-mode="drills"] [data-section="season"]{display:none !important}
+.app[data-mode="season"] .podnav{display:none}
+.app[data-mode="season"] .newrules{display:none !important}
+.app[data-mode="season"] .card{display:none !important}
+.app[data-mode="season"] .podhead{display:none !important}
+.app[data-mode="season"] [data-section]:not([data-section="season"]){display:none !important}
+.app[data-mode="season"] [data-section="season"]{display:block !important}
+/* sticky week column so Wk# stays visible on horizontal scroll */
+.seasonwrap{overflow-x:auto}
+.seasonwrap .wk{position:sticky;left:0;background:var(--bg-2);z-index:1}
+.seasonwrap tr.phase td:first-child{position:sticky;left:0;background:var(--blue-surf);z-index:1}
 
 .body-wrap{padding:18px 14px 40px}
 
@@ -379,13 +408,19 @@ footer b{color:var(--red-txt);font-weight:600}
     </div>
   </header>
 
-  <nav class="podnav" id="podnav" aria-label="Filter by pod">
-    <button class="pill active" data-pod="all"><span class="dot"></span>All</button>
-    <button class="pill" data-pod="track"><span class="dot"></span>Tracking</button>
-    <button class="pill" data-pod="foot"><span class="dot"></span>Footwork</button>
-    <button class="pill" data-pod="clear"><span class="dot"></span>Clearing</button>
-    <button class="pill" data-pod="comm"><span class="dot"></span>Communication</button>
-  </nav>
+  <div class="navstack">
+    <div class="modenav" role="tablist" aria-label="View mode">
+      <button class="modetab active" data-mode="drills" role="tab" aria-selected="true">Drills</button>
+      <button class="modetab" data-mode="season" role="tab" aria-selected="false">Season Map</button>
+    </div>
+    <nav class="podnav" id="podnav" aria-label="Filter by pod">
+      <button class="pill active" data-pod="all"><span class="dot"></span>All</button>
+      <button class="pill" data-pod="track"><span class="dot"></span>Tracking</button>
+      <button class="pill" data-pod="foot"><span class="dot"></span>Footwork</button>
+      <button class="pill" data-pod="clear"><span class="dot"></span>Clearing</button>
+      <button class="pill" data-pod="comm"><span class="dot"></span>Communication</button>
+    </nav>
+  </div>
 
   <div class="body-wrap">
 
@@ -885,6 +920,25 @@ footer b{color:var(--red-txt);font-weight:600}
       cards.forEach(function(c){c.style.display=(pod==='all'||c.getAttribute('data-pod')===pod)?'':'none';});
       heads.forEach(function(h){h.style.display=(pod==='all'||h.getAttribute('data-pod')===pod)?'':'none';});
       document.querySelectorAll('[data-section]').forEach(function(s){s.style.display=(pod==='all')?'':'none';});
+    });
+  });
+
+  var app=document.querySelector('.app');
+  app.setAttribute('data-mode','drills');
+  var modetabs=document.querySelectorAll('.modetab');
+  modetabs.forEach(function(t){
+    t.addEventListener('click',function(){
+      var mode=t.getAttribute('data-mode');
+      modetabs.forEach(function(x){x.classList.remove('active');x.setAttribute('aria-selected','false');});
+      t.classList.add('active');t.setAttribute('aria-selected','true');
+      app.setAttribute('data-mode',mode);
+      if(mode==='drills'){
+        cards.forEach(function(c){c.style.display='';});
+        heads.forEach(function(h){h.style.display='';});
+        document.querySelectorAll('[data-section]').forEach(function(s){s.style.display='';});
+        var activePill=document.querySelector('.pill.active');
+        if(activePill){activePill.click();}
+      }
     });
   });
 })();
